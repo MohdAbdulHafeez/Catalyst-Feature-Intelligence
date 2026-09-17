@@ -12,6 +12,8 @@ from .frequency import (
     FrequencyDistributionConfig,
     FrequencyDistributionProfile,
 )
+from .ordinality import OrdinalityAnalyzer, OrdinalityConfig, OrdinalityProfile
+from .risk import CategoricalRiskAnalyzer, CategoricalRiskProfile, RiskConfig
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,15 +22,19 @@ class CategoricalProfilerConfig:
 
     cardinality: CardinalityConfig = CardinalityConfig()
     frequency: FrequencyDistributionConfig = FrequencyDistributionConfig()
+    ordinality: OrdinalityConfig = OrdinalityConfig()
+    risk: RiskConfig = RiskConfig()
 
 
 @dataclass(frozen=True, slots=True)
 class CategoricalFeatureProfile:
-    """Combined intelligence profile for one categorical feature."""
+    """Unified intelligence profile for one categorical feature."""
 
     feature_name: str
     cardinality: CardinalityProfile
     frequency: FrequencyDistributionProfile
+    ordinality: OrdinalityProfile
+    risk: CategoricalRiskProfile
 
 
 class CategoricalProfiler:
@@ -43,6 +49,8 @@ class CategoricalProfiler:
         self.schema_profiler = schema_profiler or SchemaProfiler()
         self.cardinality_analyzer = CardinalityAnalyzer(self.config.cardinality)
         self.frequency_analyzer = FrequencyDistributionAnalyzer(self.config.frequency)
+        self.ordinality_analyzer = OrdinalityAnalyzer(self.config.ordinality)
+        self.risk_analyzer = CategoricalRiskAnalyzer(self.config.risk)
 
     def profile(
         self,
@@ -67,7 +75,9 @@ class CategoricalProfiler:
             non_categorical = [
                 column
                 for column in selected
-                if next(profile for profile in schema.columns if profile.name == column).semantic_type
+                if next(
+                    profile for profile in schema.columns if profile.name == column
+                ).semantic_type
                 is not ColumnSemanticType.CATEGORICAL
             ]
             if non_categorical:
@@ -76,18 +86,22 @@ class CategoricalProfiler:
                     f"{non_categorical}"
                 )
 
-        return tuple(
-            self._profile_column(frame[column], column)
-            for column in selected
-        )
+        return tuple(self._profile_column(frame[column], column) for column in selected)
 
     def _profile_column(
         self,
         series: pd.Series,
         feature_name: str,
     ) -> CategoricalFeatureProfile:
+        cardinality = self.cardinality_analyzer.analyze(series, feature_name)
+        frequency = self.frequency_analyzer.analyze(series, feature_name)
+        ordinality = self.ordinality_analyzer.analyze(series, feature_name)
+        risk = self.risk_analyzer.analyze(cardinality, frequency, ordinality)
+
         return CategoricalFeatureProfile(
             feature_name=feature_name,
-            cardinality=self.cardinality_analyzer.analyze(series, feature_name),
-            frequency=self.frequency_analyzer.analyze(series, feature_name),
+            cardinality=cardinality,
+            frequency=frequency,
+            ordinality=ordinality,
+            risk=risk,
         )

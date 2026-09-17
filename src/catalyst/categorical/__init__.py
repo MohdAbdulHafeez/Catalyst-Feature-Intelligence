@@ -11,10 +11,24 @@ from catalyst.categorical.frequency import (
     FrequencyDistributionConfig,
     FrequencyDistributionProfile,
 )
+from catalyst.categorical.ordinality import (
+    OrdinalityAnalyzer,
+    OrdinalityConfig,
+    OrdinalityProfile,
+    OrdinalSignal,
+)
 from catalyst.categorical.profiler import (
     CategoricalFeatureProfile,
     CategoricalProfiler,
     CategoricalProfilerConfig,
+)
+from catalyst.categorical.risk import (
+    CategoricalRiskAnalyzer,
+    CategoricalRiskProfile,
+    RiskConfig,
+    RiskFinding,
+    RiskSeverity,
+    RiskType,
 )
 
 __all__ = [
@@ -25,7 +39,17 @@ __all__ = [
     "FrequencyDistributionAnalyzer",
     "FrequencyDistributionConfig",
     "FrequencyDistributionProfile",
+    "OrdinalSignal",
+    "OrdinalityAnalyzer",
+    "OrdinalityConfig",
+    "OrdinalityProfile",
     "CategoricalFeatureProfile",
     "CategoricalProfiler",
     "CategoricalProfilerConfig",
+    "CategoricalRiskAnalyzer",
+    "CategoricalRiskProfile",
+    "RiskConfig",
+    "RiskFinding",
+    "RiskSeverity",
+    "RiskType",
 ]

@@ -65,9 +65,7 @@ def test_frequency_distribution_reports_top_categories() -> None:
         name="category",
     )
 
-    profile = FrequencyDistributionAnalyzer(
-        FrequencyDistributionConfig(top_k=3)
-    ).analyze(series)
+    profile = FrequencyDistributionAnalyzer(FrequencyDistributionConfig(top_k=3)).analyze(series)
 
     assert [item.category for item in profile.categories] == ["A", "B", "C"]
     assert [item.count for item in profile.categories] == [6, 2, 1]

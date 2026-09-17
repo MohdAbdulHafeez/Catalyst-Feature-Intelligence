@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import ceil, exp, log
-from typing import Any
 
 import pandas as pd
 
@@ -73,9 +72,9 @@ class CardinalityAnalyzer:
                 singleton_category_count=0,
                 rare_category_count=0,
                 rare_category_ratio=0.0,
-                estimated_one_hot_features=1 if (
-                    missing_count > 0 and self.config.include_missing_as_one_hot_dimension
-                ) else 0,
+                estimated_one_hot_features=1
+                if (missing_count > 0 and self.config.include_missing_as_one_hot_dimension)
+                else 0,
             )
 
         try:
@@ -94,9 +93,7 @@ class CardinalityAnalyzer:
 
         entropy = float(-sum(p * log(p) for p in probabilities if p > 0.0))
         normalized_entropy = (
-            entropy / log(unique_count)
-            if unique_count > 1 and entropy > 0.0
-            else 0.0
+            entropy / log(unique_count) if unique_count > 1 and entropy > 0.0 else 0.0
         )
         effective_category_count = float(exp(entropy)) if unique_count else 0.0
 

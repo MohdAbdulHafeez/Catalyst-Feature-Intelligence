@@ -1,0 +1,37 @@
+"""Categorical drift and robustness intelligence for CATALYST."""
+
+from catalyst.drift.distribution import (
+    CategoricalDriftAnalyzer,
+    DistributionProfiler,
+)
+from catalyst.drift.metrics import (
+    hhi,
+    jensen_shannon_divergence,
+    population_stability_index,
+    total_variation_distance,
+)
+from catalyst.drift.models import (
+    MISSING_CATEGORY_KEY,
+    CategoricalDistributionProfile,
+    CategoricalDriftMetrics,
+    CategoricalDriftReport,
+    CategoryFrequency,
+    DriftConfig,
+    DriftMetric,
+)
+
+__all__ = [
+    "CategoryFrequency",
+    "CategoricalDistributionProfile",
+    "CategoricalDriftAnalyzer",
+    "CategoricalDriftMetrics",
+    "CategoricalDriftReport",
+    "DistributionProfiler",
+    "DriftConfig",
+    "DriftMetric",
+    "MISSING_CATEGORY_KEY",
+    "hhi",
+    "jensen_shannon_divergence",
+    "population_stability_index",
+    "total_variation_distance",
+]

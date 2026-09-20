@@ -111,15 +111,26 @@ def build_pipeline(
         **dict(candidate.encoder.params),
     )
 
-    preprocessor = ColumnTransformer(
-        transformers=[
+    transformers: list[tuple[str, Any, list[str]]] = [
+        (
+            "categorical",
+            encoder,
+            list(categorical_columns),
+        ),
+    ]
+
+    if numerical_columns:
+        transformers.append(
             (
-                "categorical",
-                encoder,
-                list(categorical_columns),
-            ),
-        ],
-        remainder="passthrough" if numerical_columns else "drop",
+                "numerical",
+                "passthrough",
+                list(numerical_columns),
+            )
+        )
+
+    preprocessor = ColumnTransformer(
+        transformers=transformers,
+        remainder="drop",
         verbose_feature_names_out=False,
     )
 

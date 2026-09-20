@@ -97,3 +97,37 @@ def test_target_encoder_is_inside_pipeline() -> None:
     assert preprocessor.transformers[0][0] == "categorical"
     assert preprocessor.transformers[0][2] == ["city"]
     assert preprocessor.transformers[0][1].requires_target is True
+
+
+def test_build_pipeline_drops_columns_not_declared_for_preprocessing() -> None:
+    candidate = BenchmarkCandidate(
+        name="frequency__logistic_regression",
+        encoder=EncoderSpec(
+            name="frequency",
+            kind=EncoderKind.FREQUENCY,
+            params={},
+        ),
+        model=DEFAULT_CLASSIFICATION_MODEL,
+    )
+
+    pipeline = build_pipeline(
+        candidate,
+        categorical_columns=("city",),
+        numerical_columns=("age",),
+    )
+
+    X = pd.DataFrame(
+        {
+            "city": ["Hyderabad", "Delhi", "Hyderabad", "Mumbai"],
+            "age": [20, 21, 22, 23],
+            "unselected_metadata": ["a", "b", "c", "d"],
+        }
+    )
+    y = pd.Series([0, 1, 0, 1])
+
+    pipeline.fit(X, y)
+
+    feature_names = list(pipeline.named_steps["preprocessor"].get_feature_names_out())
+
+    assert feature_names == ["city", "age"]
+    assert "unselected_metadata" not in feature_names

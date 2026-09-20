@@ -21,6 +21,13 @@ class DriftMetric(StrEnum):
     TOP_CATEGORY_SHARE_DELTA = "top_category_share_delta"
 
 
+class RobustnessStatus(StrEnum):
+    """Lifecycle state of an encoder robustness evaluation."""
+
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 @dataclass(frozen=True, slots=True)
 class DriftConfig:
     """Configuration for numerical stability in categorical drift metrics."""
@@ -125,3 +132,66 @@ class CategoricalDriftReport(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     features: tuple[CategoricalDriftMetrics, ...] = ()
+
+
+class EncoderRobustnessMetrics(BaseModel):
+    """Observed behavior of one encoder under a train/reference shift."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    encoder_name: str = Field(min_length=1)
+    feature_name: str = Field(min_length=1)
+
+    status: RobustnessStatus
+
+    train_row_count: int = Field(ge=1)
+    reference_row_count: int = Field(ge=1)
+
+    unseen_rate: FiniteFloat = Field(ge=0.0, le=1.0)
+    new_category_count: int = Field(ge=0)
+    missing_rate_delta: FiniteFloat
+
+    train_output_features: int | None = Field(default=None, ge=0)
+    reference_output_features: int | None = Field(default=None, ge=0)
+    output_feature_count_delta: int | None = None
+
+    train_output_density: FiniteFloat | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    reference_output_density: FiniteFloat | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    output_density_delta: FiniteFloat | None = None
+
+    train_non_finite_rate: FiniteFloat | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    reference_non_finite_rate: FiniteFloat | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+
+    train_memory_bytes: int | None = Field(default=None, ge=0)
+    reference_memory_bytes: int | None = Field(default=None, ge=0)
+
+    error_type: str | None = None
+    error_message: str | None = None
+
+
+class EncoderRobustnessReport(BaseModel):
+    """Robustness measurements for multiple encoder evaluations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    results: tuple[EncoderRobustnessMetrics, ...] = ()
+
+
+DEFAULT_RANDOM_STATE: Final[int] = 42
+DEFAULT_CV_SPLITS: Final[int] = 5

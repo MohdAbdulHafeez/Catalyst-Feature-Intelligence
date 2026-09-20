@@ -18,18 +18,26 @@ from catalyst.drift.models import (
     CategoryFrequency,
     DriftConfig,
     DriftMetric,
+    EncoderRobustnessMetrics,
+    EncoderRobustnessReport,
+    RobustnessStatus,
 )
+from catalyst.drift.robustness import EncoderRobustnessAnalyzer
 
 __all__ = [
-    "CategoryFrequency",
     "CategoricalDistributionProfile",
     "CategoricalDriftAnalyzer",
     "CategoricalDriftMetrics",
     "CategoricalDriftReport",
+    "CategoryFrequency",
     "DistributionProfiler",
     "DriftConfig",
     "DriftMetric",
+    "EncoderRobustnessAnalyzer",
+    "EncoderRobustnessMetrics",
+    "EncoderRobustnessReport",
     "MISSING_CATEGORY_KEY",
+    "RobustnessStatus",
     "hhi",
     "jensen_shannon_divergence",
     "population_stability_index",

@@ -18,18 +18,21 @@ from catalyst.api.contracts import (
     ProfileRequest,
     TaskType,
 )
+from catalyst.api.ingestion import DatasetIngestionError, LocalDatasetStore
 
 __all__ = [
     "ApiError",
     "ApiSettings",
     "BenchmarkRequest",
     "DatasetFormat",
+    "DatasetIngestionError",
     "DatasetReference",
     "DatasetUploadMetadata",
     "DecisionResponse",
     "HealthResponse",
     "JobResponse",
     "JobStatus",
+    "LocalDatasetStore",
     "OptimizationConstraints",
     "OptimizationRequest",
     "OptimizationWeights",

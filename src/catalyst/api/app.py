@@ -13,6 +13,7 @@ from catalyst.api.errors import (
 )
 from catalyst.api.ingestion import DatasetIngestionError, LocalDatasetStore
 from catalyst.api.middleware import RequestIdMiddleware
+from catalyst.api.routes.benchmark import router as benchmark_router
 from catalyst.api.routes.categorical import router as categorical_router
 from catalyst.api.routes.datasets import router as datasets_router
 from catalyst.api.routes.health import router as health_router
@@ -52,4 +53,5 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     app.include_router(datasets_router, prefix="/api/v1")
     app.include_router(profile_router, prefix="/api/v1")
     app.include_router(categorical_router, prefix="/api/v1")
+    app.include_router(benchmark_router)
     return app

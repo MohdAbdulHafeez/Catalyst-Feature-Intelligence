@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Self
+from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, field_validator, model_validator
 
@@ -25,25 +25,15 @@ class JobStatus(StrEnum):
 
 
 class ApiModel(BaseModel):
-    """Base transport model: strict fields and immutable request/response contracts."""
-
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
 class DatasetReference(ApiModel):
-    dataset_id: str = Field(
-        min_length=1,
-        max_length=128,
-        pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$",
-    )
+    dataset_id: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 
 
 class DatasetUploadMetadata(ApiModel):
-    dataset_id: str = Field(
-        min_length=1,
-        max_length=128,
-        pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$",
-    )
+    dataset_id: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
     filename: str = Field(min_length=1, max_length=255)
     format: DatasetFormat
     size_bytes: int = Field(ge=0)
@@ -56,20 +46,50 @@ class JobResponse(ApiModel):
 
 
 class ProfileRequest(ApiModel):
-    dataset_id: str = Field(
-        min_length=1,
-        max_length=128,
-        pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$",
-    )
+    dataset_id: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
     target_column: str | None = Field(default=None, min_length=1, max_length=255)
 
 
+class ProfileColumnResponse(ApiModel):
+    name: str = Field(min_length=1, max_length=255)
+    semantic_type: str = Field(min_length=1, max_length=64)
+    pandas_dtype: str = Field(min_length=1, max_length=128)
+    row_count: int = Field(ge=0)
+    non_null_count: int = Field(ge=0)
+    missing_count: int = Field(ge=0)
+    missing_fraction: FiniteFloat = Field(ge=0.0, le=1.0)
+    unique_count: int = Field(ge=0)
+    unique_ratio: FiniteFloat = Field(ge=0.0, le=1.0)
+    is_constant: bool
+    likely_identifier: bool
+    identifier_likelihood_score: FiniteFloat = Field(ge=0.0, le=1.0)
+    identifier_signals: tuple[str, ...] = ()
+    sample_values: tuple[Any, ...] = ()
+
+
+class ProfileResponse(ApiModel):
+    dataset_id: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
+    filename: str = Field(min_length=1, max_length=255)
+    format: DatasetFormat
+    row_count: int = Field(ge=0)
+    column_count: int = Field(ge=0)
+    columns: tuple[ProfileColumnResponse, ...] = ()
+    numerical_columns: tuple[str, ...] = ()
+    categorical_columns: tuple[str, ...] = ()
+    boolean_columns: tuple[str, ...] = ()
+    datetime_columns: tuple[str, ...] = ()
+    text_columns: tuple[str, ...] = ()
+    identifier_columns: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_column_count(self) -> Self:
+        if self.column_count != len(self.columns):
+            raise ValueError("column_count must match the number of column profiles.")
+        return self
+
+
 class BenchmarkRequest(ApiModel):
-    dataset_id: str = Field(
-        min_length=1,
-        max_length=128,
-        pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$",
-    )
+    dataset_id: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
     target_column: str = Field(min_length=1, max_length=255)
     task_type: TaskType
     metric: str = Field(min_length=1, max_length=64)

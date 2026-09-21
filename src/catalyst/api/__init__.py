@@ -15,7 +15,9 @@ from catalyst.api.contracts import (
     OptimizationConstraints,
     OptimizationRequest,
     OptimizationWeights,
+    ProfileColumnResponse,
     ProfileRequest,
+    ProfileResponse,
     TaskType,
 )
 from catalyst.api.ingestion import DatasetIngestionError, LocalDatasetStore
@@ -36,7 +38,9 @@ __all__ = [
     "OptimizationConstraints",
     "OptimizationRequest",
     "OptimizationWeights",
+    "ProfileColumnResponse",
     "ProfileRequest",
+    "ProfileResponse",
     "TaskType",
     "create_app",
 ]

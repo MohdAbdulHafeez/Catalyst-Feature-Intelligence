@@ -78,24 +78,16 @@ class LocalDatasetStore:
     def create_dataset_id(self) -> str:
         return uuid4().hex
 
-    def save_upload(
-        self,
-        *,
-        dataset_id: str,
-        filename: str,
-        upload,
-    ) -> DatasetManifest:
+    def save_upload(self, *, dataset_id: str, filename: str, upload) -> DatasetManifest:
         _validate_dataset_id(dataset_id)
         safe_filename = _safe_filename(filename)
         dataset_format = _format_from_filename(safe_filename)
-
         dataset_dir = self.root / dataset_id
         dataset_dir.mkdir(parents=False, exist_ok=False)
-
         data_path = dataset_dir / f"data.{dataset_format.value}"
         temp_path = dataset_dir / f".upload-{uuid4().hex}.tmp"
-
         size_bytes = 0
+
         try:
             with temp_path.open("wb") as target:
                 while True:
@@ -142,6 +134,27 @@ class LocalDatasetStore:
         payload = json.loads(manifest_path.read_text(encoding="utf-8"))
         return DatasetManifest.from_json(payload)
 
+    def load_dataframe(self, dataset_id: str) -> pd.DataFrame:
+        manifest = self.get_manifest(dataset_id)
+        dataset_dir = self.root / dataset_id
+        data_path = dataset_dir / f"data.{manifest.format.value}"
+
+        if not data_path.is_file():
+            raise DatasetIngestionError("Stored dataset artifact is missing.")
+
+        try:
+            if manifest.format is DatasetFormat.CSV:
+                frame = pd.read_csv(data_path)
+            else:
+                frame = pd.read_parquet(data_path)
+        except Exception as exc:
+            raise DatasetIngestionError(f"Stored dataset could not be loaded: {exc}") from exc
+
+        if len(frame) != manifest.row_count or len(frame.columns) != manifest.column_count:
+            raise DatasetIngestionError("Stored dataset does not match its ingestion manifest.")
+
+        return frame
+
 
 def _validate_dataset_id(dataset_id: str) -> None:
     if not _DATASET_ID_PATTERN.fullmatch(dataset_id):
@@ -149,7 +162,7 @@ def _validate_dataset_id(dataset_id: str) -> None:
 
 
 def _safe_filename(filename: str) -> str:
-    candidate = Path(filename.replace("\\", "/")).name.strip()
+    candidate = Path(filename).name.strip()
     if not candidate or candidate in {".", ".."}:
         raise DatasetIngestionError("A valid dataset filename is required.")
     if len(candidate) > 255:
@@ -200,9 +213,7 @@ def _inspect_csv(path: Path) -> tuple[int, tuple[str, ...]]:
     try:
         header = pd.read_csv(path, nrows=0)
         columns = tuple(str(column) for column in header.columns)
-        row_count = 0
-        for chunk in pd.read_csv(path, chunksize=100_000):
-            row_count += len(chunk)
+        row_count = sum(len(chunk) for chunk in pd.read_csv(path, chunksize=100_000))
         return row_count, columns
     except Exception as exc:
         raise DatasetIngestionError(f"Invalid CSV dataset: {exc}") from exc
@@ -211,8 +222,8 @@ def _inspect_csv(path: Path) -> tuple[int, tuple[str, ...]]:
 def _inspect_parquet(path: Path) -> tuple[int, tuple[str, ...]]:
     try:
         parquet = pq.ParquetFile(path)
-        metadata = parquet.metadata
-        columns = tuple(str(name) for name in parquet.schema_arrow.names)
-        return int(metadata.num_rows), columns
+        return int(parquet.metadata.num_rows), tuple(
+            str(name) for name in parquet.schema_arrow.names
+        )
     except Exception as exc:
         raise DatasetIngestionError(f"Invalid Parquet dataset: {exc}") from exc

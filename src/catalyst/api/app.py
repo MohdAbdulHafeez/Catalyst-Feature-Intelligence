@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
+from catalyst.api.benchmark_store import BenchmarkArtifactStore
 from catalyst.api.config import ApiSettings
 from catalyst.api.errors import (
     dataset_ingestion_error_handler,
@@ -33,6 +34,9 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     app.state.dataset_store = LocalDatasetStore(
         root=resolved_settings.data_dir,
         max_upload_bytes=resolved_settings.max_upload_bytes,
+    )
+    app.state.benchmark_store = BenchmarkArtifactStore(
+        root=resolved_settings.data_dir.parent / "benchmarks",
     )
     app.add_middleware(RequestIdMiddleware)
     app.add_middleware(

@@ -182,3 +182,95 @@ def test_benchmark_endpoint_rejects_missing_dataset(
     )
 
     assert response.status_code == 404
+
+
+def test_benchmark_api_returns_persisted_benchmark_id(tmp_path) -> None:
+    import pandas as pd
+    from fastapi.testclient import TestClient
+
+    from catalyst.api.app import create_app
+    from catalyst.api.config import ApiSettings
+
+    class InMemoryDatasetStore:
+        def __init__(self, frame: pd.DataFrame) -> None:
+            self.frame = frame
+
+        def load_dataframe(self, dataset_id: str) -> pd.DataFrame:
+            if dataset_id != "dataset-1":
+                raise FileNotFoundError(dataset_id)
+
+            return self.frame.copy()
+
+    frame = pd.DataFrame(
+        {
+            "city": [
+                "Hyderabad",
+                "Delhi",
+                "Mumbai",
+                "Chennai",
+                "Hyderabad",
+                "Delhi",
+                "Mumbai",
+                "Chennai",
+                "Hyderabad",
+                "Delhi",
+                "Mumbai",
+                "Chennai",
+            ],
+            "segment": [
+                "A",
+                "B",
+                "A",
+                "B",
+                "A",
+                "B",
+                "A",
+                "B",
+                "A",
+                "B",
+                "A",
+                "B",
+            ],
+            "age": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
+            "target": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+        }
+    )
+
+    app = create_app(
+        ApiSettings(
+            data_dir=tmp_path,
+        )
+    )
+
+    app.state.dataset_store = InMemoryDatasetStore(frame)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/benchmark",
+            json={
+                "dataset_id": "dataset-1",
+                "target_column": "target",
+                "task_type": "classification",
+                "metric": "accuracy",
+                "cv": 3,
+                "random_state": 42,
+            },
+        )
+
+        assert response.status_code == 200
+
+        benchmark_id = response.headers.get("X-Benchmark-Id")
+
+        assert benchmark_id is not None
+        assert len(benchmark_id) == 32
+
+        artifact = app.state.benchmark_store.get(benchmark_id)
+
+        assert artifact.benchmark_id == benchmark_id
+        assert artifact.dataset_id == "dataset-1"
+        assert artifact.target_column == "target"
+        assert artifact.task_type.value == "classification"
+        assert artifact.metric == "accuracy"
+        assert artifact.categorical_columns
+        assert artifact.result.summary.metric_name == "accuracy"
+        assert len(artifact.result.trials) == 5

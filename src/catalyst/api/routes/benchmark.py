@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from uuid import uuid4
 
 import pandas as pd
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 
+from catalyst.api.benchmark_store import BenchmarkArtifact
 from catalyst.api.contracts import BenchmarkRequest, TaskType
 from catalyst.api.ingestion import DatasetIngestionError
 from catalyst.benchmark.engine import BenchmarkConfig, BenchmarkEngine
@@ -132,6 +134,7 @@ def _resolve_columns(
 def run_benchmark(
     payload: BenchmarkRequest,
     request: Request,
+    response: Response,
 ) -> BenchmarkResult:
     service = request.app.state.dataset_store
 
@@ -175,7 +178,7 @@ def run_benchmark(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={
                 "code": "no_categorical_features",
-                "message": ("At least one categorical feature is required."),
+                "message": "At least one categorical feature is required.",
             },
         )
 
@@ -207,5 +210,22 @@ def run_benchmark(
                 "message": str(exc),
             },
         ) from exc
+
+    benchmark_id = uuid4().hex
+
+    request.app.state.benchmark_store.save(
+        BenchmarkArtifact(
+            benchmark_id=benchmark_id,
+            dataset_id=payload.dataset_id,
+            target_column=payload.target_column,
+            task_type=payload.task_type,
+            metric=payload.metric,
+            categorical_columns=tuple(categorical_columns),
+            numerical_columns=tuple(numerical_columns),
+            result=result,
+        )
+    )
+
+    response.headers["X-Benchmark-Id"] = benchmark_id
 
     return result
